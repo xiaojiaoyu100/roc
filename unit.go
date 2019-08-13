@@ -4,7 +4,7 @@ import "time"
 
 type Unit struct {
 	Key            string
-	Data           []byte
+	Data           interface{}
 	ExpirationTime time.Time
 }
 

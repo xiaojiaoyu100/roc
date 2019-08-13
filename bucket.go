@@ -17,7 +17,7 @@ func NewBucket() (*Bucket, error) {
 	return b, nil
 }
 
-func (b *Bucket) Get(key string) ([]byte, error) {
+func (b *Bucket) Get(key string) (interface{}, error) {
 	b.guard.Lock()
 	defer b.guard.Unlock()
 	element, hit := b.coll[key]
@@ -36,7 +36,7 @@ func (b *Bucket) Get(key string) ([]byte, error) {
 	return u.Data, nil
 }
 
-func (b *Bucket) Set(key string, data []byte, d time.Duration) error {
+func (b *Bucket) Set(key string, data interface{}, d time.Duration) error {
 	b.guard.Lock()
 	defer b.guard.Unlock()
 	element, hit := b.coll[key]
@@ -78,12 +78,10 @@ func (b *Bucket) gc() {
 	b.guard.Lock()
 	defer b.guard.Unlock()
 
-	e := b.objs.Back()
-	for e != nil {
-		unit := e.Value.(*Unit)
-		if unit.Expire() {
+	for e := b.objs.Front(); e != nil; e = e.Next() {
+		unit, ok := e.Value.(*Unit)
+		if ok && unit.Expire() {
 			b.del(unit.Key, e)
 		}
-		e = e.Prev()
 	}
 }

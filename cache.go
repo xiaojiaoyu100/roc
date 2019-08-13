@@ -19,7 +19,7 @@ func New(setters ...Setter) (*Cache, error) {
 	var err error
 	c := new(Cache)
 	c.GCInterval = 60 * time.Second
-	c.BucketNum = 128
+	c.BucketNum = 16
 
 	for _, setter := range setters {
 		if err := setter(c); err != nil {
@@ -61,10 +61,12 @@ func (c *Cache) gc() {
 				{
 					for _, bucket := range c.buckets {
 						j := curlew.NewJob()
-						j.Fn = func(_ context.Context, _ interface{}) error {
-							bucket.gc()
+						j.Fn = func(_ context.Context, arg interface{}) error {
+							b := arg.(*Bucket)
+							b.gc()
 							return nil
 						}
+						j.Arg = bucket
 						c.dispatcher.SubmitAsync(j)
 					}
 				}
@@ -75,7 +77,7 @@ func (c *Cache) gc() {
 	}()
 }
 
-func (c *Cache) Get(key string) ([]byte, error) {
+func (c *Cache) Get(key string) (interface{}, error) {
 	idx, err := c.hashIndex(key)
 	if err != nil {
 		return nil, err
@@ -83,7 +85,7 @@ func (c *Cache) Get(key string) ([]byte, error) {
 	return c.buckets[idx].Get(key)
 }
 
-func (c *Cache) Set(key string, value []byte, duration time.Duration) error {
+func (c *Cache) Set(key string, value interface{}, duration time.Duration) error {
 	idx, err := c.hashIndex(key)
 	if err != nil {
 		return err
