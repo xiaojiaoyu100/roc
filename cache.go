@@ -3,8 +3,9 @@ package roc
 import (
 	"container/list"
 	"context"
-	"github.com/xiaojiaoyu100/curlew"
 	"time"
+
+	"github.com/xiaojiaoyu100/curlew"
 )
 
 type Cache struct {
@@ -16,7 +17,6 @@ type Cache struct {
 }
 
 func New(setters ...Setter) (*Cache, error) {
-	var err error
 	c := new(Cache)
 	c.GCInterval = 60 * time.Second
 	c.BucketNum = 16
@@ -41,7 +41,10 @@ func New(setters ...Setter) (*Cache, error) {
 		c.buckets = append(c.buckets, bucket)
 	}
 
-	c.dispatcher, err = curlew.New()
+	monitor := func(err error) {}
+
+	var err error
+	c.dispatcher, err = curlew.New(curlew.WithMonitor(monitor))
 	if err != nil {
 		return nil, err
 	}
@@ -58,17 +61,15 @@ func (c *Cache) gc() {
 		for {
 			select {
 			case <-ticker.C:
-				{
-					for _, bucket := range c.buckets {
-						j := curlew.NewJob()
-						j.Fn = func(_ context.Context, arg interface{}) error {
-							b := arg.(*Bucket)
-							b.gc()
-							return nil
-						}
-						j.Arg = bucket
-						c.dispatcher.SubmitAsync(j)
+				for _, bucket := range c.buckets {
+					j := curlew.NewJob()
+					j.Fn = func(_ context.Context, arg interface{}) error {
+						b := arg.(*Bucket)
+						b.gc()
+						return nil
 					}
+					j.Arg = bucket
+					c.dispatcher.SubmitAsync(j)
 				}
 			case <-c.close:
 				return
