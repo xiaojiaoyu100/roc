@@ -69,7 +69,7 @@ func (c *Cache) gc() {
 						return nil
 					}
 					j.Arg = bucket
-					c.dispatcher.SubmitAsync(j)
+					c.dispatcher.Submit(j)
 				}
 			case <-c.close:
 				return
