@@ -8,5 +8,5 @@ func (c *Cache) hashIndex(key string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	return int(hash.Sum64() & uint64(c.BucketNum - 1)), nil
+	return int(hash.Sum64() & uint64(c.BucketNum-1)), nil
 }

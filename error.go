@@ -1,12 +1,14 @@
 package roc
 
+// Error implements an error interface.
 type Error string
 
+// Error returns a error string.
 func (e Error) Error() string {
 	return string(e)
 }
 
 const (
-	ErrMiss        = Error("cache miss")
-	ErrorBucketNum = Error("bucket num must be the power of two")
+	// ErrMiss represents a cache miss.
+	ErrMiss = Error("cache miss")
 )

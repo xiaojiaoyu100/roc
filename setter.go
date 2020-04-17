@@ -4,11 +4,8 @@ import (
 	"time"
 )
 
+// Setter configures a cache.
 type Setter func(c *Cache) error
-
-func isPowerOfTwo(num int) bool {
-	return (num != 0) && ((num & (num - 1)) == 0)
-}
 
 // WithBucketNum set the number of buckets
 func WithBucketNum(num int) Setter {

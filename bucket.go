@@ -1,56 +1,49 @@
 package roc
 
 import (
-	"container/list"
 	"sync"
 	"time"
 )
 
+// Bucket is a piece of cache.
 type Bucket struct {
-	guard sync.Mutex
-	objs  *list.List
-	coll  map[string]*list.Element
+	coll sync.Map
 }
 
+// NewBucket returns a bucket.
 func NewBucket() (*Bucket, error) {
 	b := new(Bucket)
 	return b, nil
 }
 
+// Get returns a corresponding value.
 func (b *Bucket) Get(key string) (interface{}, error) {
-	b.guard.Lock()
-	defer b.guard.Unlock()
-	element, hit := b.coll[key]
+	value, hit := b.coll.Load(key)
 	if !hit {
 		return nil, ErrMiss
 	}
-	u, ok := element.Value.(*Unit)
+	u, ok := value.(*Unit)
 	if !ok {
 		return nil, ErrMiss
 	}
-
 	if u.Expire() {
 		return nil, ErrMiss
 	}
-	b.objs.MoveToFront(element)
 	return u.Data, nil
 }
 
+// Set sets a value for a key.
 func (b *Bucket) Set(key string, data interface{}, d time.Duration) error {
-	b.guard.Lock()
-	defer b.guard.Unlock()
-	element, hit := b.coll[key]
+	value, hit := b.coll.Load(key)
 	if !hit {
 		unit := new(Unit)
 		unit.Key = key
 		unit.Data = data
 		unit.ExpirationTime = time.Now().UTC().Add(d)
-		e := b.objs.PushFront(unit)
-		b.coll[key] = e
+		b.coll.Store(key, unit)
 		return nil
 	}
-	b.objs.MoveToFront(element)
-	unit, ok := element.Value.(*Unit)
+	unit, ok := value.(*Unit)
 	if !ok {
 		return nil
 	}
@@ -59,29 +52,22 @@ func (b *Bucket) Set(key string, data interface{}, d time.Duration) error {
 	return nil
 }
 
+// Del deletes a key.
 func (b *Bucket) Del(key string) {
-	b.guard.Lock()
-	defer b.guard.Unlock()
-	element, hit := b.coll[key]
-	if !hit {
-		return
-	}
-	b.del(key, element)
-}
-
-func (b *Bucket) del(key string, e *list.Element) {
-	b.objs.Remove(e)
-	delete(b.coll, key)
+	b.coll.Delete(key)
 }
 
 func (b *Bucket) gc() {
-	b.guard.Lock()
-	defer b.guard.Unlock()
-
-	for e := b.objs.Front(); e != nil; e = e.Next() {
-		unit, ok := e.Value.(*Unit)
-		if ok && unit.Expire() {
-			b.del(unit.Key, e)
+	b.coll.Range(func(key, value interface{}) (keep bool) {
+		keep = true
+		unit, ok := value.(*Unit)
+		if !ok {
+			return
 		}
-	}
+		if !unit.Expire() {
+			return
+		}
+		b.Del(key.(string))
+		return
+	})
 }

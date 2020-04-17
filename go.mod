@@ -1,6 +1,6 @@
 module github.com/xiaojiaoyu100/roc
 
-go 1.12
+go 1.14
 
 require (
 	github.com/xiaojiaoyu100/curlew v0.2.1

@@ -1,13 +1,13 @@
 package roc
 
 import (
-	"container/list"
 	"context"
 	"time"
 
 	"github.com/xiaojiaoyu100/curlew"
 )
 
+// Cache is a store.
 type Cache struct {
 	GCInterval time.Duration
 	BucketNum  int
@@ -16,10 +16,11 @@ type Cache struct {
 	close      chan struct{}
 }
 
+// New returns a new cache.
 func New(setters ...Setter) (*Cache, error) {
 	c := new(Cache)
-	c.GCInterval = 60 * time.Second
-	c.BucketNum = 16
+	c.GCInterval = 120 * time.Second
+	c.BucketNum = 1024
 
 	for _, setter := range setters {
 		if err := setter(c); err != nil {
@@ -27,17 +28,12 @@ func New(setters ...Setter) (*Cache, error) {
 		}
 	}
 
-	if !isPowerOfTwo(c.BucketNum) {
-		return nil, ErrorBucketNum
-	}
 	c.buckets = make([]*Bucket, 0, c.BucketNum)
 	for idx := 0; idx < c.BucketNum; idx++ {
 		bucket, err := NewBucket()
 		if err != nil {
 			return nil, err
 		}
-		bucket.coll = make(map[string]*list.Element)
-		bucket.objs = list.New()
 		c.buckets = append(c.buckets, bucket)
 	}
 
@@ -78,6 +74,7 @@ func (c *Cache) gc() {
 	}()
 }
 
+// Get returns a value.
 func (c *Cache) Get(key string) (interface{}, error) {
 	idx, err := c.hashIndex(key)
 	if err != nil {
@@ -86,6 +83,7 @@ func (c *Cache) Get(key string) (interface{}, error) {
 	return c.buckets[idx].Get(key)
 }
 
+// Set sets a value.
 func (c *Cache) Set(key string, value interface{}, duration time.Duration) error {
 	idx, err := c.hashIndex(key)
 	if err != nil {
@@ -94,6 +92,7 @@ func (c *Cache) Set(key string, value interface{}, duration time.Duration) error
 	return c.buckets[idx].Set(key, value, duration)
 }
 
+// Del deletes a key.
 func (c *Cache) Del(key string) error {
 	idx, err := c.hashIndex(key)
 	if err != nil {
