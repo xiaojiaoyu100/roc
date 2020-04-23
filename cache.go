@@ -20,7 +20,7 @@ type Cache struct {
 func New(setters ...Setter) (*Cache, error) {
 	c := new(Cache)
 	c.GCInterval = 120 * time.Second
-	c.BucketNum = 1024
+	c.BucketNum = 16
 
 	for _, setter := range setters {
 		if err := setter(c); err != nil {
@@ -40,7 +40,10 @@ func New(setters ...Setter) (*Cache, error) {
 	monitor := func(err error) {}
 
 	var err error
-	c.dispatcher, err = curlew.New(curlew.WithMonitor(monitor))
+	c.dispatcher, err = curlew.New(
+		curlew.WithMonitor(monitor),
+		curlew.WithMaxWorkerNum(16),
+	)
 	if err != nil {
 		return nil, err
 	}

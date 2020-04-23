@@ -1,6 +1,8 @@
 package roc
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestBucket_hashIndex(t *testing.T) {
 	cache, err := New(WithBucketNum(16))
@@ -37,5 +39,15 @@ func TestBucket_hashIndex(t *testing.T) {
 			t.Fatalf("key = %s, want = %d, got = %d", tt.In, tt.Out, idx)
 		}
 	}
+}
 
+func BenchmarkBucket_hashIndex(b *testing.B) {
+	b.ResetTimer()
+	cache, err := New(WithBucketNum(16))
+	if err != nil {
+		b.Fatalf("cache err = %+v", err)
+	}
+	for i := 0; i < b.N; i++ {
+		cache.hashIndex("nfjndjfndsjfnjdnjfndjscds")
+	}
 }

@@ -16,3 +16,14 @@ func TestCache_Set(t *testing.T) {
 	}
 	t.Log(c.Get("one"))
 }
+
+func BenchmarkBucket_Get(b *testing.B) {
+	b.ResetTimer()
+	c, err := New()
+	if err != nil {
+		b.Fatalf("new cache failed")
+	}
+	for i := 0; i < b.N; i++ {
+		c.Get("sssssssssssssssssssssssss")
+	}
+}
