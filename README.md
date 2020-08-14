@@ -2,6 +2,8 @@
 
 Roc is a key-value memory cache.
 
+[![GoDoc](https://godoc.org/github.com/xiaojiaoyu100/roc?status.svg)](https://godoc.org/github.com/xiaojiaoyu100/roc)
+
 ## Feature
 
 * Volatile LRU
